@@ -4,10 +4,6 @@
     "base_url": "https://MinaAtef1.github.io",
     "base_path": "/blog",
     "trailing_slash": false,
-    "favicon": "/images/favicon.png",
-    "logo": "/images/logo.png",
-    "logo_width": "200",
-    "logo_height": "34",
     "logo_text": "Mina Atef"
   },
 
@@ -17,9 +13,9 @@
   },
 
   "metadata": {
-    "meta_author": "Themefisher",
+    "meta_author": "Mina Atef",
     "meta_image": "/images/og-image.png",
-    "meta_description": "Bookworm Light Astro Blog Template"
+    "meta_description": "Mina Atef is a software engineer, blogger, and open-source contributor. He writes about software engineering, programming, and personal development."
   },
 
   "params": {

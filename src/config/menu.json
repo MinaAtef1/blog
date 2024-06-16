@@ -24,11 +24,8 @@
         {
           "name": "Tags",
           "url": "/tags"
-        },
-        {
-          "name": "Privacy Policy",
-          "url": "/privacy-policy"
         }
+
       ]
     }
   ],
@@ -40,10 +37,6 @@
     {
       "name": "Contact",
       "url": "/contact"
-    },
-    {
-      "name": "Privacy Policy",
-      "url": "/privacy-policy"
     }
   ]
 }
