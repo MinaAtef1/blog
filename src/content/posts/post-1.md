@@ -3,9 +3,9 @@ title: "How to make toys from old Olarpaper"
 description: "meta description"
 date: 2022-04-01T05:00:00Z
 image: "/images/posts/01.jpg"
-categories: ["art"]
-authors: ["Mark Dinn"]
-tags: ["diy", "toy"]
+categories: ["Django"]
+authors: ["Mina Atef"]
+tags: ["django", "python", "web development"]
 draft: false
 ---
 
