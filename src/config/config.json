@@ -2,7 +2,7 @@
   "site": {
     "title": "Mina Atef",
     "base_url": "https://MinaAtef1.github.io",
-    "base_path": "blog",
+    "base_path": "/blog",
     "trailing_slash": false,
     "favicon": "/images/favicon.png",
     "logo": "/images/logo.png",
