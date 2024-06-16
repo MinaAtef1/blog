@@ -1,22 +1,42 @@
 ---
-title: "How to make toys from old Olarpaper"
-description: "meta description"
-date: 2022-04-01T05:00:00Z
-image: "/images/posts/01.jpg"
+title: "Django: Create multiple admin instances"
+description: "create multiple admin instances in Django"
+date: 2024-06-12T15:00:00Z
+image: "/images/posts/post1/1.jpeg"
 categories: ["Django"]
 authors: ["Mina Atef"]
-tags: ["django", "python", "web development"]
+tags: ["django","django admin", "python", "web development"]
 draft: false
 ---
 
-Nemo vel ad consectetur namut rutrum ex, venenatis sollicitudin urna. Aliquam erat volutpat. Integer eu ipsum sem. Ut bibendum lacus vestibulum maximus suscipit. Quisque vitae nibh iaculis neque blandit euismod.
+# Creating Multiple Django Admin Instances
 
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Nemo vel ad consectetur ut aperiam. Itaque eligendi natus aperiam? Excepturi repellendus consequatur quibusdam optio expedita praesentium est adipisci dolorem ut eius!
+Having multiple Django admin sites is crucial. The ability to split the admin into multiple instances, each with its permissions, models, and logic, can be incredibly valuable.
 
-## Creative Design
+So, how can we do it?
 
-Nam ut rutrum ex, venenatis sollicitudin urna. Aliquam erat volutpat. Integer eu ipsum sem. Ut bibendum lacus vestibulum maximus suscipit. Quisque vitae nibh iaculis neque blandit euismod.
+```python
+# Creating multiple Django admin instances
+from django.contrib.admin import AdminSite
+from myapp.models import orders  # Adjust 'myapp' to your app's name
 
-> Lorem ipsum dolor sit amet consectetur adipisicing elit. Nemo vel ad consectetur ut aperiam. Itaque eligendi natus aperiam? Excepturi repellendus consequatur quibusdam optio expedita praesentium est adipisci dolorem ut eius!
+class OrdersAdmin(AdminSite):
+    site_header = "Orders Admin"
+    site_title = "Orders Admin Site"
+    index_title = "Orders Admin"  
+    site_url = ""
 
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Nemo vel ad consectetur ut aperiam. Itaque eligendi natus aperiam? Excepturi repellendus consequatur quibusdam optio expedita praesentium est adipisci dolorem ut eius!
+orders_admin = OrdersAdmin(name='orders_admin')
+orders_admin.register(orders)
+```
+
+```python
+# in urls.py
+from django.urls import path
+from orders.admin import orders_admin
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('orders-admin/', orders_admin.urls)
+]
+```
