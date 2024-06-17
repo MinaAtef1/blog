@@ -1,0 +1,182 @@
+---
+title: "A dive into the Django admin (Part 1): Creating and Customizing Multiple Admin Sites."
+description: "The Django admin is one of the strongest features of Django. It allows you to manage your application's data with ease. However, there are times when you need more than one admin site."
+date: 2024-06-17T15:00:00Z
+image: "/images/posts/post1/1.jpeg"
+categories: ["Django"]
+authors: ["Mina Atef"]
+tags: ["django","django admin", "python", "web development"]
+draft: false
+---
+
+
+
+
+# A dive into the Django admin (Part 1)
+The Django admin is one of Django's most powerful features, enabling effortless data management within your application. However, as your project grows, you might find the need for multiple admin sites to better manage different aspects of your application, such as separating user management from order processing. In this article, we'll explore how to create and customize multiple Django admin instances, ensuring a seamless and efficient administration experience.
+
+So buckle up and let's dive in.
+
+## Introduction to the Django Admin
+Before we start working with the django admin let's first make sure we are familiar with the `admin.AdminSite` class.
+
+most people are familiar with the default admin site that comes with Django which is `admin.site`, but what most people don't know is that the `admin.site` is an instance of the `admin.AdminSite` class.
+
+The main functions we will override in the `admin.AdminSite` class are:
+- `register`: to register the models to the admin site.
+- `each_context`: to add extra context to the admin site.
+- `_build_app_dict`: to build the app dictionary that will be used in the admin site to show the apps and models.
+- `get_app_list`: to get the list of apps that will be shown in the admin site.
+
+you can find more about the `admin.AdminSite` class from the source code [here](https://github.com/django/django/blob/main/django/contrib/admin/sites.py)
+
+
+Now that we are familiar with the `admin.AdminSite` class let's dive into the first topic.
+
+<Notice type="note">Throughout this article, we will will assume that we have a Django app that has the following models: `orders`, `users`, `products`. </Notice>
+
+## Creating Multiple Django Admin Instances
+
+There are times when you need more than one admin site. For example, you might want to create a separate admin site for managing orders in your e-commerce application and another admin site for managing users.
+
+and to do so you can create a new instance of the `admin.AdminSite` class and register the models to it.
+
+```python
+# Creating multiple Django admin instances
+from django.contrib.admin import AdminSite
+from myapp.models import orders  # Adjust 'myapp' to your app's name
+
+class OperationsAdmin(AdminSite):
+    site_header = "Operations Admin"
+    site_title = "Operations Admin Site"
+    index_title = "Operations Admin"  
+    site_url = ""
+
+operations_admin = OperationsAdmin(name='operations_admin')
+operations_admin.register(orders)
+```
+
+Now that we have created a new instance of the `admin.AdminSite` class and registered the `orders` model to it, we can now add the new admin site to the urls.
+
+```python
+# in urls.py
+from django.urls import path
+from path.to.admin import orders_admin
+
+urlpatterns = [
+    ...
+    path('operations-admin/', operations_admin.urls),
+]
+```
+
+Now that we have added the new admin site to the urls, you can now access it by going to `http://localhost:8000/operations-admin/`.
+
+## Adding Navigation Between Admin Instances
+To make it easier for the users to move between the different admin instances, we need to edit the each_context and the HTML of the base admin site template.
+
+let's start by creating a registry that will hold the different admin instances.
+
+### Admin Register Singleton
+The `AdminRegister` class uses the singleton pattern to ensure that there's only one instance managing all admin sites. This is crucial for maintaining a consistent registry and preventing conflicts.
+
+
+```python
+
+from django.urls import path
+from django.contrib.admin import AdminSite
+# A singleton class to register admin sites
+class AdminRegister(object):
+    admin_sites = {}
+
+    def __new__(self):
+        if not hasattr(self, 'instance'):
+            self.instance = super(AdminRegister, self).__new__(self)
+        return self.instance
+        
+    def register(self, admin_site, icon, name, title, url)->None:
+        admin_site.each_context = self.get_context_function(admin_site)
+
+        self.admin_sites[admin_site] = {
+            'icon': icon,
+            'name': name,
+            'title': title,
+            'url': f'{url}/',
+            'app': f'{admin_site.name}:index',
+            'app_list_function': admin_site.get_app_list,
+        }
+
+
+    def get_url_paths(self)->list:
+        paths = []
+        for site, site_dict in self.admin_sites.items():
+            paths.append(path(site_dict['url'], site.urls))
+        return paths
+
+
+    def get_admin_sites(self, request)->list:
+        data = []
+        for site, site_dict in self.admin_sites.copy().items():
+            if site.has_permission(request):
+                site_dict['apps_list'] = site_dict['app_list_function'](request) if request else None
+                data.append(site_dict)
+
+        return data
+    
+    def get_context_function(self, admin_site):
+        def each_context(request):
+            context = super(admin_site.__class__, admin_site).each_context(request)
+            context['admin_sites'] = self.get_admin_sites(request)
+            return context
+        return each_context
+
+
+```
+
+what we did here is that we created a singleton class that will hold the different admin instances and their data,
+and we added a method to register the admin sites and another method to get the admin sites data.
+
+now let's register the admin sites in the `OperationsAdmin` class.
+
+```python
+# admin.py
+  ...
+  AdminRegister().register(operations_admin, 'fa fa-cogs', 'Operations Admin', 'Operations Admin Site')
+```
+
+now notice that we added the `AdminRegister().register` method to the `OperationsAdmin` class and we passed the admin site instance, the icon, the name, the title, and the url of the admin site.
+
+also notice that we added the `admin_site.each_context = self.get_context_function(admin_site)` to the `AdminRegister` class to add the `admin_sites` to the context of the admin site.
+
+and finally, we add the `AdminRegister().get_url_paths()` to the urls.
+
+```python
+from django.urls import path
+
+urlpatterns = [
+    ...
+] + AdminRegister().get_url_paths()
+```
+
+now that we have added the admin sites to the urls, we can now add the HTML to the base admin site template to show the different admin instances.
+first we will create a file in the `templates/admin` directory called `base_site.html` and add the following code.
+  
+  ```html
+ {% extends "admin/base.html" %}
+{% block userlinks %}
+{{ block.super }}
+<select onchange="window.location.href = this.value;">
+    <option value="">Select a site</option>
+     {% for site in admin_sites %}
+         <option value="{{request.scheme}}://{{request.get_host}}/{{site.url}}" >{{site.name}}</option>
+     {% endfor %}
+</select>
+{% endblock %}
+  ```
+
+and that's the the output of the code above.
+
+![Admin site selection dropdown](/images/posts/post1/select_image.png)
+
+
+## Conclusion
+In this article, we've explored how to create and customize multiple Django admin instances, allowing you to better manage different aspects of your application. In the next part of this series, we'll dive deeper into advanced customization techniques and explore how to further enhance the Django admin experience. Stay tuned for more insights and tips on optimizing your Django admin sites.
