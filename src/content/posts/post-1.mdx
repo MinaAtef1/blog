@@ -18,28 +18,28 @@ The Django admin is one of Django's most powerful features, enabling effortless 
 So buckle up and let's dive in.
 
 ## Introduction to the Django Admin
-Before we start working with the django admin let's first make sure we are familiar with the `admin.AdminSite` class.
+Before we start working with the django admin let's first make sure we are familiar with the **admin.AdminSite** class.
 
-most people are familiar with the default admin site that comes with Django which is `admin.site`, but what most people don't know is that the `admin.site` is an instance of the `admin.AdminSite` class.
+most people are familiar with the default admin site that comes with Django which is **admin.site**, but what most people don't know is that the **admin.site** is an instance of the **admin.AdminSite** class.
 
-The main functions we will override in the `admin.AdminSite` class are:
-- `register`: to register the models to the admin site.
-- `each_context`: to add extra context to the admin site.
-- `_build_app_dict`: to build the app dictionary that will be used in the admin site to show the apps and models.
-- `get_app_list`: to get the list of apps that will be shown in the admin site.
+The main functions we will override in the **admin.AdminSite** class are:
+- **register**: to register the models to the admin site.
+- **each_context**: to add extra context to the admin site.
+- **_build_app_dict**: to build the app dictionary that will be used in the admin site to show the apps and models.
+- **get_app_list**: to get the list of apps that will be shown in the admin site.
 
-you can find more about the `admin.AdminSite` class from the source code [here](https://github.com/django/django/blob/main/django/contrib/admin/sites.py)
+you can find more about the **admin.AdminSite** class from the source code [here](https://github.com/django/django/blob/main/django/contrib/admin/sites.py)
 
 
-Now that we are familiar with the `admin.AdminSite` class let's dive into the first topic.
+Now that we are familiar with the **admin.AdminSite** class let's dive into the first topic.
 
-<Notice type="note">Throughout this article, we will will assume that we have a Django app that has the following models: `orders`, `users`, `products`. </Notice>
+<Notice type="note">Throughout this article, we will will assume that we have a Django app that has the following models: **orders**, **users**, **products**. </Notice>
 
 ## Creating Multiple Django Admin Instances
 
 There are times when you need more than one admin site. For example, you might want to create a separate admin site for managing orders in your e-commerce application and another admin site for managing users.
 
-and to do so you can create a new instance of the `admin.AdminSite` class and register the models to it.
+and to do so you can create a new instance of the **admin.AdminSite** class and register the models to it.
 
 ```python
 # Creating multiple Django admin instances
@@ -56,7 +56,7 @@ operations_admin = OperationsAdmin(name='operations_admin')
 operations_admin.register(orders)
 ```
 
-Now that we have created a new instance of the `admin.AdminSite` class and registered the `orders` model to it, we can now add the new admin site to the urls.
+Now that we have created a new instance of the **admin.AdminSite** class and registered the **orders** model to it, we can now add the new admin site to the urls.
 
 ```python
 # in urls.py
@@ -69,7 +69,7 @@ urlpatterns = [
 ]
 ```
 
-Now that we have added the new admin site to the urls, you can now access it by going to `http://localhost:8000/operations-admin/`.
+Now that we have added the new admin site to the urls, you can now access it by going to **http://localhost:8000/operations-admin/**.
 
 ## Adding Navigation Between Admin Instances
 To make it easier for the users to move between the different admin instances, we need to edit the each_context and the HTML of the base admin site template.
@@ -77,7 +77,7 @@ To make it easier for the users to move between the different admin instances, w
 let's start by creating a registry that will hold the different admin instances.
 
 ### Admin Register Singleton
-The `AdminRegister` class uses the singleton pattern to ensure that there's only one instance managing all admin sites. This is crucial for maintaining a consistent registry and preventing conflicts.
+The **AdminRegister** class uses the singleton pattern to ensure that there's only one instance managing all admin sites. This is crucial for maintaining a consistent registry and preventing conflicts.
 
 
 ```python
@@ -135,7 +135,7 @@ class AdminRegister(object):
 what we did here is that we created a singleton class that will hold the different admin instances and their data,
 and we added a method to register the admin sites and another method to get the admin sites data.
 
-now let's register the admin sites in the `OperationsAdmin` class.
+now let's register the admin sites in the **OperationsAdmin** class.
 
 ```python
 # admin.py
@@ -143,11 +143,11 @@ now let's register the admin sites in the `OperationsAdmin` class.
   AdminRegister().register(operations_admin, 'fa fa-cogs', 'Operations Admin', 'Operations Admin Site')
 ```
 
-now notice that we added the `AdminRegister().register` method to the `OperationsAdmin` class and we passed the admin site instance, the icon, the name, the title, and the url of the admin site.
+now notice that we added the **AdminRegister().register** method to the **OperationsAdmin** class and we passed the admin site instance, the icon, the name, the title, and the url of the admin site.
 
-also notice that we added the `admin_site.each_context = self.get_context_function(admin_site)` to the `AdminRegister` class to add the `admin_sites` to the context of the admin site.
+also notice that we added the **admin_site.each_context = self.get_context_function(admin_site)** to the **AdminRegister** class to add the **admin_sites** to the context of the admin site.
 
-and finally, we add the `AdminRegister().get_url_paths()` to the urls.
+and finally, we add the **AdminRegister().get_url_paths()** to the urls.
 
 ```python
 from django.urls import path
@@ -158,7 +158,7 @@ urlpatterns = [
 ```
 
 now that we have added the admin sites to the urls, we can now add the HTML to the base admin site template to show the different admin instances.
-first we will create a file in the `templates/admin` directory called `base_site.html` and add the following code.
+first we will create a file in the **templates/admin** directory called **base_site.html** and add the following code.
   
   ```html
  {% extends "admin/base.html" %}
