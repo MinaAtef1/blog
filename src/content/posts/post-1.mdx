@@ -21,10 +21,7 @@ Before we start working with the django admin let's first make sure we are famil
 most people are familiar with the default admin site that comes with Django which is **admin.site**, but what most people don't know is that the **admin.site** is an instance of the **admin.AdminSite** class.
 
 The main functions we will override in the **admin.AdminSite** class are:
-- **register**: to register the models to the admin site.
 - **each_context**: to add extra context to the admin site.
-- **_build_app_dict**: to build the app dictionary that will be used in the admin site to show the apps and models.
-- **get_app_list**: to get the list of apps that will be shown in the admin site.
 
 you can find more about the **admin.AdminSite** class from the source code [here](https://github.com/django/django/blob/main/django/contrib/admin/sites.py)
 
