@@ -20,7 +20,7 @@ Before we start working with the django admin let's first make sure we are famil
 
 most people are familiar with the default admin site that comes with Django which is **admin.site**, but what most people don't know is that the **admin.site** is an instance of the **admin.AdminSite** class.
 
-The main functions we will override in the **admin.AdminSite** class are:
+The main functions we will override in the **admin.AdminSite** class in this article is:
 - **each_context**: to add extra context to the admin site.
 
 you can find more about the **admin.AdminSite** class from the source code [here](https://github.com/django/django/blob/main/django/contrib/admin/sites.py)
@@ -31,10 +31,7 @@ Now that we are familiar with the **admin.AdminSite** class let's dive into the 
 <Notice type="note">Throughout this article, we will will assume that we have a Django app that has the following models: **orders**, **users**, **products**. </Notice>
 
 ## Creating Multiple Django Admin Instances
-
-There are times when you need more than one admin site. For example, you might want to create a separate admin site for managing orders in your e-commerce application and another admin site for managing users.
-
-and to do so you can create a new instance of the **admin.AdminSite** class and register the models to it.
+Creating multiple Django admin instances is a straightforward process. You can create a new instance of the **admin.AdminSite** class and register the models you want to manage with that instance.
 
 ```python
 # Creating multiple Django admin instances
