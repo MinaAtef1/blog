@@ -10,8 +10,6 @@ draft: false
 ---
 
 
-
-
 # A dive into the Django admin (Part 1)
 The Django admin is one of Django's most powerful features, enabling effortless data management within your application. However, as your project grows, you might find the need for multiple admin sites to better manage different aspects of your application, such as separating user management from order processing. In this article, we'll explore how to create and customize multiple Django admin instances, ensuring a seamless and efficient administration experience.
 
@@ -115,9 +113,13 @@ class AdminRegister(object):
 
     def get_admin_sites(self, request)->list:
         data = []
+        request_url = request.get_full_path()
+        request_url = request_url[1:] if request_url.startswith('/') else request_url
+        
         for site, site_dict in self.admin_sites.copy().items():
             if site.has_permission(request):
                 site_dict['apps_list'] = site_dict['app_list_function'](request) if request else None
+                site_dict['current_site'] = request_url.startswith(site_dict['url'])
                 data.append(site_dict)
 
         return data
@@ -128,8 +130,6 @@ class AdminRegister(object):
             context['admin_sites'] = self.get_admin_sites(request)
             return context
         return each_context
-
-
 ```
 
 what we did here is that we created a singleton class that will hold the different admin instances and their data,
@@ -159,15 +159,17 @@ urlpatterns = [
 
 now that we have added the admin sites to the urls, we can now add the HTML to the base admin site template to show the different admin instances.
 first we will create a file in the **templates/admin** directory called **base_site.html** and add the following code.
-  
+
+
   ```html
- {% extends "admin/base.html" %}
+{% extends "admin/base.html" %}
 {% block userlinks %}
 {{ block.super }}
 <select onchange="window.location.href = this.value;">
     <option value="">Select a site</option>
      {% for site in admin_sites %}
-         <option value="{{request.scheme}}://{{request.get_host}}/{{site.url}}" >{{site.name}}</option>
+         <option value="{{request.scheme}}://{{request.get_host}}/{{site.url}}" 
+            {% if site.current_site %} selected {% endif %}>{{site.name}}</option>
      {% endfor %}
 </select>
 {% endblock %}
@@ -176,7 +178,6 @@ first we will create a file in the **templates/admin** directory called **base_s
 and that's the the output of the code above.
 
 ![Admin site selection dropdown](/images/posts/post1/select_image.png)
-
 
 ## Conclusion
 In this article, we've explored how to create and customize multiple Django admin instances, allowing you to better manage different aspects of your application. In the next part of this series, we'll dive deeper into advanced customization techniques and explore how to further enhance the Django admin experience. Stay tuned for more insights and tips on optimizing your Django admin sites.
