@@ -19,7 +19,9 @@ export async function getStaticPaths() {
 
 const { category } = Astro.params;
 
-const posts = await getSinglePage("posts");
+const posts_ = await getSinglePage("posts");
+const posts = posts_.filter((post) => !post.data.only_link);
+
 const filterByCategory = taxonomyFilter(posts, "categories", category);
 const sortedPosts = sortByDate(filterByCategory);
 

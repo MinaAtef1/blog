@@ -9,7 +9,9 @@ import { humanize, markdownify, slugify } from "@/lib/utils/textConverter";
 import { BiCalendarEdit, BiCategoryAlt } from "react-icons/bi";
 
 const allAuthors = await getSinglePage("authors");
-const posts = await getSinglePage("posts");
+const posts_ = await getSinglePage("posts");
+const posts = posts_.filter((post) => !post.data.only_link);
+
 const { post } = Astro.props;
 const similarPosts = similerItems(post, posts, post.slug);
 const { Content } = await post.render();

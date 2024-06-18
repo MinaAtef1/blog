@@ -30,6 +30,7 @@ export interface TPost {
     categories: string[];
     tags: string[];
     draft: boolean;
+    only_link: boolean;
   };
   render: () => Promise<{ Content: any }>;
 }
