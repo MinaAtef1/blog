@@ -1,0 +1,170 @@
+---
+title: "A dive into the Django admin (Part 3): Adding Custom Pages"
+description: "Learn how to enhance your Django admin site by adding custom pages. This guide will walk you through the process of creating and integrating custom pages into the Django admin interface, providing a more tailored and functional admin experience."
+date: 2024-06-19T15:00:00Z
+image: "/images/posts/post3/main.png"
+categories: ["Django"]
+authors: ["Mina Atef"]
+tags: ["django", "django admin", "python", "web development"]
+draft: true
+---
+
+# A dive into the Django admin (Part 3)
+In the previous articles, we explored the django admin and we went deep into the admin site and we learned how to organize, rename, and customize Django admin models. Now, let's dive deeper into the admin and learn how to add custom pages to the admin site.
+
+## Adding Custom Pages
+so far the django admin will only add the models to the admin site and will provide a CRUD interface for these models, but what if we want to add a custom page to the admin site that will not be related to any model, for example, a dashboard page that will show some statistics about the application.
+
+In this article, we will learn how to add custom pages to the django admin site.
+
+### Adding a Custom Page
+
+First we will change the **register_sub_app** function, in the previous article we have added a new attribute called **sub_apps** that will hold the sub-apps and their models, now we will add a new attribute called **sub_pages** that will hold the sub-pages that we want to add to the admin site.
+
+so now instead of returning a function to register the models under the sub-app, we will return a class that will have a method to register the models and a method to register the pages.
+
+```python
+    class MainAdmin(admin.AdminSite):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.sub_apps = {}
+            self.sub_pages = {}
+
+        def register_sub_app(admin_site, sub_app_name, sub_app_order):
+            """
+            Register a sub-app in the admin and return a function to register models under this sub-app.
+            """
+            admin_site.sub_apps[sub_app_name] = {'sub_app_name': sub_app_name,
+                                        'sub_app_verbose_name': sub_app_name.replace('_', ' ').title(),
+                                        'sub_app_order': sub_app_order,
+                                        'models': {}}
+            class SubAppRegister():
+                def sub_app_register(model_or_iterable, admin_class=None, model_order=None, naming_function=None, **options):
+                    admin_site.register(model_or_iterable, admin_class, **options)
+                    admin_site.sub_apps[sub_app_name]['models'][model_or_iterable] = {'model_order': model_order,
+                                                                                'naming_function': naming_function}
+
+                def sub_register_page(page_name, page_function, model_order=None, naming_function=None):
+                    admin_site.pages[page_name] = {
+                        'sub_app_name': sub_app_name,
+                        'page_function': page_function,
+                        'page_name': page_name,
+                        'model_order': model_order,
+                        'naming_function': naming_function
+                    }
+
+
+            return SubAppRegister
+```
+<Notice type="warning">
+The old code that we have used to register the models under the sub-app will not work anymore, you will need to update the code to use the new class that will be returned from the **register_sub_app** function.
+</Notice>
+
+Now we have added a new attribute called **sub_pages** that will hold the sub-pages that we want to add to the admin site, and we have changed the **register_sub_app** function to return a class that will have a method to register the models and a method to register the pages.
+
+let's add the pages url, the pages function and update the generate_app_dict to add the pages in the admin site.
+
+```python
+
+    def generate_app_dict(self, request):
+        """
+        This ia a native django method that we override to organize the admin list
+        """
+
+        def get_init_app_dict(app_name):
+            return {
+                'name': app_name,
+                'models': [],
+                'has_module_perms': True,
+                'models_url_list': []
+            }.copy()
+
+        app_dict = {}
+        config_dict = self._build_app_dict(request)
+        sup_models = self.get_sub_models()
+
+        for app_label, app_config in config_dict.items():
+            for model in app_config['models']:
+
+                models_class = model['model']
+                app_verbose = sup_models.get(models_class, app_label)
+
+                app_dict.setdefault(app_verbose, get_init_app_dict(app_verbose))
+                app_dict[app_verbose]['models_url_list'].append(model['admin_url'])
+
+                naming_function = (self.sub_apps.get(app_verbose.lower(), {})
+                                               .get('models', {})
+                                               .get(models_class, {})
+                                               .get('naming_function', None))
+                if naming_function:
+                    model['name'] = naming_function()
+
+                app_dict[app_verbose]['models'].append(model)
+
+        for page_name, page_dict in self.sub_pages.items():
+            if page_dict['sub_app_name'] != app_verbose.lower():
+                continue
+
+            app_dict[app_verbose]['models'].append({
+                'name': page_dict['page_verbose_name'],
+                'admin_url': reverse(f'{self.name}:admin-pages', args=[page_name]),
+                'model': page_name,
+                'add_url': None,
+                'view_only': True
+            })
+
+        return app_dict
+
+
+    def get_urls(self) -> List[URLResolver]:
+        urls = super().get_urls()
+        dash_urls = [path(f'page/<str:page>', self.page_view, name=f'admin-pages')]
+        return dash_urls + urls
+
+    def page_view(self, request, page=None):
+        page_dict = self.pages.get(page, None)
+        if not page_dict:
+            raise Http404('Page not found')
+
+        function = page_dict['page_function']
+
+        output = function(request)
+        if type(output) not in [str, SafeString]:
+            return output
+
+        app_list = self.get_app_list(request)
+
+        context = {
+            **self.each_context(request),
+            'subtitle': None,
+            'app_list': app_list,
+            'html___value': output
+        }
+
+        return TemplateResponse(request, 'admin/general_page.html', context)
+```
+
+let's create the template for the custom page
+
+in `templates/admin/general_page.html` we will add the following code
+
+```html
+{% extends 'admin/change_form.html' %}
+{% block content %}
+
+{{ html___value|safe }}
+
+{% endblock content %}
+
+{% block breadcrumbs %}
+{%  endblock %}
+```
+
+### Using the Custom Page
+
+```python
+def orders_page(request):
+    return 'This is the Orders Page'
+
+OrdersTap.sub_register_page('Orders Page', orders_page, model_order=3)
+```

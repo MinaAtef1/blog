@@ -1,0 +1,161 @@
+---
+title: "A dive into the Django admin (Part 2): Advanced Techniques for Organizing, Renaming, and Customizing Admin Models."
+description: "In this article, we'll explore how to organize, rename, and customize Django admin models to create a more efficient and user-friendly admin interface."
+date: 2024-06-18T15:00:00Z
+image: "/images/posts/post2/main.png"
+categories: ["Django"]
+authors: ["Mina Atef"]
+tags: ["django","django admin", "python", "web development"]
+draft: true
+---
+
+# A dive into the Django admin (Part 2)
+In the previous article, we explored how to create and customize multiple Django admin instances. Now, let's dive deeper into advanced techniques for organizing, renaming, and customizing Django admin models. These techniques will help you create a more efficient and user-friendly admin interface, making it easier to manage complex applications.
+
+So let's get started.
+
+## Organizing Django Admin Models
+When working with the Django admin, you might find yourself dealing with a large number of models, making it challenging to navigate and manage them efficiently. To address this issue, we will extend the register method of the ModelAdmin class to add a few extra functionalities that will help us organize the admin models.
+
+The main functions we will override or write in the **admin.AdminSite** class are:
+- **register**: to register the models to the admin site.
+- **generate_app_dict**: to build the app dictionary that will be used in the admin site to show the apps and models.
+- **get_app_list**: to get the list of apps that will be shown in the admin site.
+- **get_model_sort**: to get the sort order of a model.
+
+### Extending the Register Method
+what we will do is that we will create a new class that extends the **admin.AdminSite** class and add a new method called **register_sub_app** that will be used to register a sub-app in the admin site.
+
+```python
+class MainAdmin(admin.AdminSite):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.sub_apps = {}
+
+    def register_sub_app(self, sub_app_name, sub_app_order):
+        """
+        Register a sub-app in the admin and return a function to register models under this sub-app.
+        """
+        self.sub_apps[sub_app_name] = {'sub_app_name': sub_app_name,
+                                       'sub_app_verbose_name': sub_app_name.replace('_', ' ').title(),
+                                       'sub_app_order': sub_app_order,
+                                       'models': {}}
+
+        def sub_app_register(model_or_iterable, admin_class=None, model_order=None, naming_function=None, **options):
+            self.register(model_or_iterable, admin_class, **options)
+            self.sub_apps[sub_app_name]['models'][model_or_iterable] = {'model_order': model_order,
+                                                                    'naming_function': naming_function}
+        return sub_app_register
+```
+
+Notice that the function will return a function that will be used to register the models under this sub-app. we have also added a new attribute called **sub_apps** that will hold the sub-apps and their models.
+
+
+### Customizing the Admin Interface
+
+now having our custom register function we can override the get_app_list and the generate_app_dict functions
+
+```python
+    ...
+    def get_sub_models(self):
+        """
+        Get a dictionary of sub-models, mapping each model to its corresponding sub-app verbose name.
+        """
+        models_sub = {}
+        for sub_app_name, sub_app_dict in self.sub_apps.items():
+            for model, model_dict in sub_app_dict['models'].items():
+                models_sub[model] = sub_app_dict['sub_app_verbose_name']
+        return models_sub
+
+    
+    def generate_app_dict(self, request):
+        """
+        This ia a native django method that we override to organize the admin list
+        """
+
+        def get_init_app_dict(app_name):
+            return {
+                'name': app_name,
+                'models': [],
+                'has_module_perms': True,
+                'models_url_list': []
+            }.copy()
+
+        app_dict = {}
+        config_dict = self._build_app_dict(request)
+        sup_models = self.get_sub_models()
+
+        for app_label, app_config in config_dict.items():
+            for model in app_config['models']:
+
+                models_class = model['model']
+                app_verbose = sup_models.get(models_class, app_label)
+
+                app_dict.setdefault(app_verbose, get_init_app_dict(app_verbose))
+                app_dict[app_verbose]['models_url_list'].append(model['admin_url'])
+
+                naming_function = (self.sub_apps.get(app_verbose.lower(), {})
+                                               .get('models', {})
+                                               .get(models_class, {})
+                                               .get('naming_function', None))
+                if naming_function:
+                    model['name'] = naming_function()
+
+                app_dict[app_verbose]['models'].append(model)
+
+        return app_dict    
+
+    def get_model_sort(self, model_class):
+        """
+        Get the sort order of a model.
+        """
+        models_order = {}
+        for sub_app_name, sub_app_dict in self.sub_apps.items():
+            for model, model_dict in sub_app_dict['models'].items():
+                models_order[model] = model_dict['model_order']
+        return models_order.get(model_class, float('inf'))
+
+
+    def get_app_list(self, request, app_label=None):
+        """
+        Return a sorted list of all the installed apps that have been
+        registered in this site.
+        """
+        app_dict = self.generate_app_dict(request)
+
+        # Sort the apps alphabetically.
+        app_list = sorted(app_dict.values(), key=lambda x: self.sub_apps.get(x['name'], {}).get('sub_app_order', float('inf')))
+        # Sort the models alphabetically within each app.
+        for app in app_list:
+            app['models'].sort(key=lambda x: self.get_model_sort(x.get('model', None)))
+
+        return app_list
+```
+
+Let's break down what we did here:
+- **get_sub_models**: a method that will return a dictionary that maps each model to its corresponding sub-app verbose name.
+- **generate_app_dict**: a method that we override to organize the admin list. We build the app dictionary and sort the models based on the sub-apps.
+- **get_model_sort**: a method that will return the sort order of a model.
+- **get_app_list**: a method that will return a sorted list of all the installed apps that have been registered in this site.
+
+and with that we can now organize the admin models into sub-apps, re-order them, and give them dynamic names.
+
+### Using the Register Method
+```python
+
+def orders_naming_function():
+    some_query = Orders.objects.all().count() # This is just an example, you can use any query you want
+    return mark_safe(f'Orders <span style="color: red;">({some_query})</span>')
+
+OrdersTap = orders_admin.register_sub_app('orders', 1)
+
+OrdersTap(Orders, model_order=1, naming_function= orders_naming_function)
+OrdersTap(Customers, model_order=2, naming_function= lambda: 'Customers')
+
+```
+Example of how to use the register_sub_app method to register sub-apps and models under them.
+![Organized Django Admin](/images/posts/post2/renaming_example.png)
+
+
+## Conclusion
+In this article, we explored how to organize, rename, and customize Django admin models to create a more efficient and user-friendly admin interface. By extending the register method of the ModelAdmin class, we were able to organize the admin models into sub-apps, re-order them, and give them dynamic names. This approach allows you to create a more structured and organized admin interface that is tailored to your application's needs.
