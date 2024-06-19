@@ -19,7 +19,7 @@ export default defineConfig({
   },
   integrations: [
     react(),
-    sitemap(),
+    sitemap({filter: (page) => !page.includes('only_link')}),
     tailwind({
       config: {
         applyBaseStyles: false,

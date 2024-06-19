@@ -1,0 +1,58 @@
+---
+title: "Building your own pubsub using Django and Postgres"
+description: "In this article, we'll explore how to build a simple pubsub system using Django and Postgres."
+date: 2024-06-19T15:00:00Z
+image: "/images/posts/post3/main.png"
+categories: ["Django"]
+authors: ["Mina Atef"]
+tags: ["ledger", "python", "web development"]
+draft: true
+only_link: true
+---
+A pubsub system is a messaging system that allows publishers to send messages to subscribers. In this article, we'll explore how to build a simple pubsub system using Django and Postgres. We'll create a simple Django app that will allow users to publish messages to a topic, and other users to subscribe to that topic and receive messages in real-time.
+
+But before we dive into the implementation, let's first understand the basic concepts of our pubsub system.
+
+## Basic Concepts
+
+#### Idempotency, consistency, and the outbox-inbox pattern
+One of the main challenges of building a pubsub system is ensuring that messages are delivered reliably and consistently. 
+
+let's imagine that we have a system that creates the orders, and just after the message is published, the system crashes, in this case, the message will be sent but the order will not be created, 
+or the order got created but the message was not published because of a failure in sending the message
+
+so we use the outbox table, and create the order and the message in the same database transaction, so if the order was created successfully the message will be published, and if the order was not created the message will not be published.
+
+for the inbox table, we use it to store the messages that were received by the subscribers, so if the subscriber was not able to receive the message, so we make sure that the message was received by the subscriber.
+
+you can read more about the outbox-inbox pattern from [here](https://microservices.io/patterns/data/transactional-outbox.html) 
+
+#### Main Components
+Our pubsub system will consist of three main components:
+- **Publisher**: A system that publishes messages to a topic.
+- **Outbox**: A table that stores messages published by publishers.
+- **Subscriber**: A system that subscribes to a topic to receive messages.
+- **Inbox**: A table that stores messages received by subscribers.
+- **Broker**: A system that listens for new messages in the outbox and delivers them to the appropriate subscribers.
+
+#### Message Flow
+Here's how our pubsub system will work:
+1. A publisher writes a message to the outbox table.
+2. The broker listens for new messages in the outbox table.
+3. When a new message is added to the outbox table, the broker copies it to its event table.
+4. The broker then delivers the message to all subscribers who have subscribed to the topic.
+5. Subscribers receive the message and write it to their inbox table.
+
+
+#### Database pulling vs. Database Triggers
+There are two main approaches to implement the broker:
+- **Database pulling**: The broker periodically polls the outbox table for new messages.
+- **Database triggers**: The broker listens for database events and reacts to them in real-time.
+
+In this article, we'll use the database pulling approach to implement the broker.
+<Notice type="info">
+In a real-world scenario, you might want to consider using database triggers for better performance and real-time message delivery. Take a look at [Postgres' LISTEN/NOTIFY](https://www.postgresql.org/docs/current/sql-notify.html) feature for more information.
+</Notice>
+
+so buckle up and let's dive in.
+## Setting up the Django App
