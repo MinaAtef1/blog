@@ -7,7 +7,9 @@ import { defineConfig, squooshImageService } from "astro/config";
 import remarkCollapse from "remark-collapse";
 import remarkToc from "remark-toc";
 import config from "./src/config/config.json";
-import partytown from '@astrojs/partytown'
+import partytown from "@astrojs/partytown";
+
+import playformCompress from "@playform/compress";
 
 // https://astro.build/config
 export default defineConfig({
@@ -19,7 +21,9 @@ export default defineConfig({
   },
   integrations: [
     react(),
-    sitemap({filter: (page) => !page.includes('only_link')}),
+    sitemap({
+      filter: (page) => !page.includes("only_link"),
+    }),
     tailwind({
       config: {
         applyBaseStyles: false,
@@ -38,10 +42,11 @@ export default defineConfig({
     }),
     mdx(),
     partytown({
-			config: {
-			  forward: ["dataLayer.push"],
-			},
-		}),
+      config: {
+        forward: ["dataLayer.push"],
+      },
+    }),
+    playformCompress(),
   ],
   markdown: {
     remarkPlugins: [

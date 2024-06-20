@@ -3,10 +3,10 @@ title: "Building your own pubsub using Django and Postgres"
 description: "In this article, we'll explore how to build a simple pubsub system using Django and Postgres."
 date: 2024-06-19T15:00:00Z
 image: "/images/posts/post3/main.png"
-categories: ["Django"]
+categories: ["web development"]
 authors: ["Mina Atef"]
-tags: ["ledger", "python", "web development"]
-draft: true
+tags: ["pubsub", "python", "web development", "Django", "Postgres"]
+draft: false
 only_link: true
 ---
 A pubsub system is a messaging system that allows publishers to send messages to subscribers. In this article, we'll explore how to build a simple pubsub system using Django and Postgres. We'll create a simple Django app that will allow users to publish messages to a topic, and other users to subscribe to that topic and receive messages in real-time.
@@ -27,7 +27,8 @@ for the inbox table, we use it to store the messages that were received by the s
 
 you can read more about the outbox-inbox pattern from [here](https://microservices.io/patterns/data/transactional-outbox.html) 
 
-#### Main Components
+
+### Main Components
 Our pubsub system will consist of three main components:
 - **Publisher**: A system that publishes messages to a topic.
 - **Outbox**: A table that stores messages published by publishers.
@@ -35,13 +36,16 @@ Our pubsub system will consist of three main components:
 - **Inbox**: A table that stores messages received by subscribers.
 - **Broker**: A system that listens for new messages in the outbox and delivers them to the appropriate subscribers.
 
-#### Message Flow
+### Message Flow
 Here's how our pubsub system will work:
 1. A publisher writes a message to the outbox table.
 2. The broker listens for new messages in the outbox table.
 3. When a new message is added to the outbox table, the broker copies it to its event table.
 4. The broker then delivers the message to all subscribers who have subscribed to the topic.
 5. Subscribers receive the message and write it to their inbox table.
+6. Subscribers can then read the message from the inbox table and process it.
+
+![Pubsub Flow Diagram](/images/posts/post5/pubsub-flow.png)
 
 
 #### Database pulling vs. Database Triggers
@@ -55,4 +59,5 @@ In a real-world scenario, you might want to consider using database triggers for
 </Notice>
 
 so buckle up and let's dive in.
-## Setting up the Django App
+## Setting up the Django Project
+First, let's create a new Django project and that has 2 apps, one for the publisher and the other for the subscriber.

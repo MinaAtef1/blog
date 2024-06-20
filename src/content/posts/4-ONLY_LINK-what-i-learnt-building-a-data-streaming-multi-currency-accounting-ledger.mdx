@@ -3,9 +3,9 @@ title: "What I Learned Building a Data Streaming Multi-Currency Accounting Ledge
 description: "Join me on a journey through the process of building a data streaming multi-currency accounting ledger "
 date: 2024-06-19T15:00:00Z
 image: "/images/posts/post4/main.jpeg"
-categories: ["Django"]
+categories: ["Data Engineering"]
 authors: ["Mina Atef"]
-tags: ["ledger", "python", "web development"]
+tags: ["ledger", "data streaming", "accounting ledger"]
 draft: false
 only_link: true
 ---
@@ -18,7 +18,7 @@ Well the title sounds scary, so why don't we start by breaking it down into smal
 
 An accounting ledger is a book that contains all the accounts of a business. It is used to record all the financial transactions of a business in a double-entry system. The ledger is divided into different accounts, each account representing a different aspect of the business.
 
-In simple terms, an accounting ledger is a record of all the money that comes in and goes out of a business. In a double-entry system, each transaction is recorded twice, once as a debit and once as a credit, to ensure the accounts always balance.
+In simple terms, an accounting ledger is a record of all the money that comes in and goes out of a business. In a double-entry system, each transactions is recorded have multiple records and they all has to sum to zero, to ensure the accounts always balance.
 
 #### Multi-currency
 
@@ -26,29 +26,45 @@ A multi-currency accounting ledger is an accounting ledger that can handle multi
 
 #### Data Streaming
 
-Data streaming is the process of continuously sending data from one point to another. In the context of an accounting ledger, data streaming can be used to send financial transactions from one system to another in real-time.
+Data streaming is the process of continuously sending data from one point to another. In the context of an accounting ledger, data streaming is used here to keep the ledger up to date with the latest transactions in real-time.
 
 Now that we have broken down the title, let's dive into some of the things I learnt while building a data streaming multi-currency accounting ledger.
 
 ## Tips about building an accounting ledger
 
+#### Business changes, so should the ledger
+
+When building an accounting ledger, you need to make sure that the ledger is flexible enough to accommodate changes in the business. This means that the ledger should be able to handle new accounts, new transactions, and new currencies without breaking. Also new sources of data with different formats should be handled easily.
+
+Building an engine that can be configured to handle different types of transactions and accounts will make your life easier.
+
 #### Add Database triggers and assertions
 
-In every entry, there might be multiple records for example if you have a transaction that involves multiple accounts, you might need to add multiple records to the ledger, to make sure that the ledger is always balanced you can add database triggers and assertions to make sure that the ledger is always balanced.
+In every transaction, there are multiple records, that moves money from one account to another, so to make sure that the ledger is always balanced you can add database triggers and assertions, this way even if the ledger validation failed for some reason, you transaction can't be unbalanced.
 
 #### Know that reconciliation is a must
 
 Reconciliation is the process of comparing two sets of records to make sure they are in agreement. In the context of an accounting ledger, reconciliation is the process of comparing the ledger with the bank and the business records to make sure they are in agreement.
+This step never gets old, and you will need to do it every now and then to make sure that the ledger is always in sync with the bank and the business records.
+So it's better to have a reconciliation mechanism that can be run automatically and can be configured to run at specific intervals.
 
 #### Have an adjustment mechanism
 
 Sometimes you might need to make adjustments to the ledger, for example, a mistake in bank transaction reconciliation of some sort, you will need to make an adjustment to correct it. having a recalculation mechanism where a new change in the data will cause a new entry to be created will make your life 10 times easier.
 
+#### Design with the manual edits in mind
+
+As much as we try to automate everything, there will always be corner cases that need manual intervention, so you need to design the ledger with manual edits in mind.
+Having a mechanism to allow manual edits to the ledger which adjust the account and adds new entries is crucial.
+
+#### Keep the history
+Try to keep the history of any changes that happen to the transactions, manual edits, and adjustments, this way you can always go back and see what happened and why it happened.
+
 ## Tips about building a multi-currency
 
 #### Have one rate per day
 
-for simplicity, and to avoid long nights of debugging, you can have one rate per day, this will make sure that you are always using the same rate for the same day.
+for simplicity, and to avoid long nights of debugging, you can have one Fx rate per day per currency, this will make debugging much easier and will make the ledger more stable.
 
 #### Be aware of rounding errors
 
@@ -56,7 +72,7 @@ When converting between currencies, you might encounter rounding errors. To avoi
 
 #### Gains and losses are part of the game
 
-When dealing with multiple currencies, you will encounter gains and losses due to exchange rate fluctuations. To account for these gains and losses, you will need some sort of mechanism to track them and report them so that you can balance the books.
+When dealing with multiple currencies, you will encounter gains and losses due to exchange rate fluctuations. To account for these gains and losses, you will need some sort of mechanism to track the changes in the exchange rates and adjust the ledger accordingly.
 
 ## Tips about building a data streaming
 
@@ -71,8 +87,8 @@ When streaming data, you need to make sure that the data is always in sync betwe
 
 #### Inbox pattern and retrying mechanism
 
-When streaming data, you can use the inbox pattern to make sure that the data is always in sync between the systems,
-also I found it easier to keep the retrying mechanism in the ledger side, this way you can make sure that the data is always in sync between the systems. and enables easier debugging.
+When streaming data, you can use the inbox pattern to make sure that the data doesn't get lost if a failure happens, 
+also I found it easier to keep the retrying mechanism in the ledger side, this way you can control the retrying mechanism and make sure that the data is always ingested.
 
 #### Use pending status
 
