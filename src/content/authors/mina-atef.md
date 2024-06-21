@@ -1,6 +1,6 @@
 ---
 title: Mina Atef
-image: /images/authors/john-doe.jpg
+image: /images/authors/mina-atef.png
 description: software engineer
 social:
   linkedin: https://www.linkedin.com/in/mina-atef-a88034144/
