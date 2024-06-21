@@ -67,7 +67,7 @@ Now that we have added the new admin site to the urls, you can now access it by 
 ## Adding Navigation Between Admin Instances
 To make it easier for the users to move between the different admin instances, we need to edit the each_context and the HTML of the base admin site template.
 
-let's start by creating a registry that will hold the different admin instances.
+let's start by creating a registry that will hold the different admin instances, this way we can manage the multiple admin instances in one place.
 
 ### Admin Register Singleton
 The **AdminRegister** class uses the singleton pattern to ensure that there's only one instance managing all admin sites. This is crucial for maintaining a consistent registry and preventing conflicts.
