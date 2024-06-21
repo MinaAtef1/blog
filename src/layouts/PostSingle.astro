@@ -35,7 +35,6 @@ const { title, description, authors, categories, image, date, tags } =
                 )
                 .map((author, i) => (
                   <a
-                    href={`/authors/${slugify(author.slug)}`}
                     class="flex items-center hover:text-primary font-medium"
                   >
                     {author.data.image && (
