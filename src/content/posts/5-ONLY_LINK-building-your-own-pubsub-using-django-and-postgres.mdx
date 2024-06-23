@@ -1,40 +1,55 @@
 ---
-title: "Building your own pubsub using Django and Postgres"
-description: "In this article, we'll explore how to build a simple pubsub system using Django and Postgres."
+title: "Microservices: A dive into a simple database pubsub system"
+description: "In this article, we'll explore how to build a simple pubsub system using database."
 date: 2024-07-21T15:00:00Z
 image: "/images/posts/post5/main.png"
 categories: ["web development"]
 authors: ["Mina Atef"]
 tags: ["pubsub", "python", "web development", "Django", "Postgres"]
-draft: true
+draft: false
 only_link: true
 ---
-A pubsub system is a messaging system that allows publishers to send messages to subscribers. In this article, we'll explore how to build a simple pubsub system using Django and Postgres. We'll create a simple Django app that will allow users to publish messages to a topic, and other users to subscribe to that topic and receive messages in real-time.
-
-But before we dive into the implementation, let's first understand the basic concepts of our pubsub system.
+A pubsub system is a messaging system that allows publishers to send messages to subscribers. In this article, we'll explore how to build a simple pubsub system using Postgres. We will look into the basic concepts of a pubsub system, discuss the implementation details, and we'll look into the outbox-inbox pattern.
 
 ## Basic Concepts
 
-#### Idempotency, consistency, and the outbox-inbox pattern
+### Idempotency, consistency, and the outbox-inbox pattern
 One of the main challenges of building a pubsub system is ensuring that messages are delivered reliably and consistently. 
 
-let's imagine that we have a system that creates the orders, and just after the message is published, the system crashes, in this case, the message will be sent but the order will not be created, 
-or the order got created but the message was not published because of a failure in sending the message
+#### Failure Scenarios
+let's imagine that we have a system_1 that creates orders, and another system_2 that sends an email to the user after the order is created.
 
-so we use the outbox table, and create the order and the message in the same database transaction, so if the order was created successfully the message will be published, and if the order was not created the message will not be published.
+- **Scenario 1**: system_1 creates the order, tries to send a message to system_2, but system_2 is down. In this case, the message will be lost, and the user will not receive the email.
+- **Scenario 2**: system_1 creates the order, tries to send message to system_2, but system_1 crashes before the message is sent. In this case, the order will be created, but the user will not receive the email.
+- **Scenario 3**: system_1 creates the order, sends the message to system_2, but system_2 crashes before processing the message. In this case, the order will be created, but the user will not receive the email.
+and so on.
 
-for the inbox table, we use it to store the messages that were received by the subscribers, so if the subscriber was not able to receive the message, so we make sure that the message was received by the subscriber.
+to solve these problems, we need to make sure that the message is delivered reliably and consistently.
+here comes the outbox-inbox pattern, the outbox-inbox pattern is a pattern that ensures that messages are delivered reliably and consistently, in a one transactional way.
+
+#### Outbox Table
+Now let's imaging that instead of system_1 sends the message directly to system_2, system_1 writes the message to a table called outbox, so in one database transaction, system_1 creates the order and writes the message to the outbox table, if anything goes wrong, the transaction will be rolled back, and the message will not be sent.
+So now we are sure that they are consistent, either the order is created and the message is sent, or nothing happens.
+
+#### Inbox Table
+Now system_2 will have a table called inbox, that listens to the incoming messages from the outbox table, so system_2 will receive the message, do the processing, and then write the message to the inbox table, so if anything goes wrong, the message will not be written to the inbox table, and a broker can retry sending the message again and again until it receives a success response.
 
 you can read more about the outbox-inbox pattern from [here](https://microservices.io/patterns/data/transactional-outbox.html) 
 
+so the main components of the pubsub system will be:
 
 ### Main Components
 Our pubsub system will consist of three main components:
 - **Publisher**: A system that publishes messages to a topic.
 - **Outbox**: A table that stores messages published by publishers.
+
 - **Subscriber**: A system that subscribes to a topic to receive messages.
 - **Inbox**: A table that stores messages received by subscribers.
+
 - **Broker**: A system that listens for new messages in the outbox and delivers them to the appropriate subscribers.
+- **Event Table**: A table that stores the messages delivered by the broker.
+- **Subscriber Table**: A table that stores the subscribers and the topics they are subscribed to.
+- **Invocation Table**: A table that stores the invocation of the subscribers.
 
 ### Message Flow
 Here's how our pubsub system will work:
@@ -42,22 +57,11 @@ Here's how our pubsub system will work:
 2. The broker listens for new messages in the outbox table.
 3. When a new message is added to the outbox table, the broker copies it to its event table.
 4. The broker then delivers the message to all subscribers who have subscribed to the topic.
-5. Subscribers receive the message and write it to their inbox table.
-6. Subscribers can then read the message from the inbox table and process it.
+5. Subscribers receive the message do the processing.
+6. if the processing is successful, the broker will write the invocation to the invocation table.
+7. if the processing is failed, the broker will retry sending the message again.
 
 ![Pubsub Flow Diagram](/images/posts/post5/pubsub-flow.png)
 
-
-#### Database pulling vs. Database Triggers
-There are two main approaches to implement the broker:
-- **Database pulling**: The broker periodically polls the outbox table for new messages.
-- **Database triggers**: The broker listens for database events and reacts to them in real-time.
-
-In this article, we'll use the database pulling approach to implement the broker.
-<Notice type="info">
-In a real-world scenario, you might want to consider using database triggers for better performance and real-time message delivery. Take a look at [Postgres' LISTEN/NOTIFY](https://www.postgresql.org/docs/current/sql-notify.html) feature for more information.
-</Notice>
-
-so buckle up and let's dive in.
-## Setting up the Django Project
-First, let's create a new Django project and that has 2 apps, one for the publisher and the other for the subscriber.
+#### Conclusion
+In this article, we explored the basic concepts of a pubsub system and discussed the outbox-inbox pattern. We looked into the main components of a pubsub system and the message flow between them.
