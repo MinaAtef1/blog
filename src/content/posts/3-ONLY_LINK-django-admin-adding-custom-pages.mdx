@@ -103,9 +103,9 @@ let's add the pages url, the pages function and update the generate_app_dict to 
                 app_dict[app_verbose]['models'].append(model)
 
         for page_name, page_dict in self.sub_pages.items():
-            if page_dict['sub_app_name'] != app_verbose.lower():
-                continue
-
+            app_verbose = page_dict['sub_app_name']
+            app_dict.setdefault(app_verbose, get_init_app_dict(app_verbose))
+            
             app_dict[app_verbose]['models'].append({
                 'name': page_dict['page_verbose_name'],
                 'admin_url': reverse(f'{self.name}:admin-pages', args=[page_name]),
@@ -113,6 +113,7 @@ let's add the pages url, the pages function and update the generate_app_dict to 
                 'add_url': None,
                 'view_only': True
             })
+    
 
         return app_dict
 
